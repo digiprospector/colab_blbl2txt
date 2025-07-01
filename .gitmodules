@@ -1,0 +1,3 @@
+[submodule "blbldl"]
+	path = blbldl
+	url = git@github.com:digiprospector/blbldl.git
