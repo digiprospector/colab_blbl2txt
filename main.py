@@ -9,6 +9,9 @@ import shutil
 
 if __name__ == "__main__":
     input_filename = 'input.txt'
+    pwd = '/content'
+    whisper = '/content/drive/MyDrive/fast_whisper_xxl/r245.4/Faster-Whisper-XXL/faster-whisper-xxl'
+    
     try:
         with open(input_filename, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -36,10 +39,10 @@ if __name__ == "__main__":
 
         try:
             print("--- 开始删除音频文件 ---")
-            files_to_delete = ['/content/audio.mp3', '/content/audio.json']
+            files_to_delete = ['audio.mp3', 'audio.json']
             for f_path in files_to_delete:
                 try:
-                    os.remove(f_path)
+                    os.remove(Path(pwd) / f_path)
                     print(f"已删除音频文件: {f_path}")
                 except FileNotFoundError:
                     pass  # 文件不存在，是正常情况
@@ -49,7 +52,6 @@ if __name__ == "__main__":
 
             # 步骤 1: 下载音频
             # 恢复使用 sys.argv 的方式，这对于处理 -c 等参数至关重要
-            sys.argv = [original_argv[0]] + line.split()
             try:
                 print(f"正在下载: {line}")
                 blbldl_main()
@@ -57,10 +59,10 @@ if __name__ == "__main__":
                 print(f"下载步骤完成 (退出码: {e.code})。")
 
             print("--- 开始删除文本文件 ---")
-            files_to_delete = ['/content/audio.mp3', '/content/audio.json']
+            files_to_delete = ['audio.srt', 'audio.text', 'audio.txt']
             for f_path in files_to_delete:
                 try:
-                    os.remove(f_path)
+                    os.remove(Path(pwd) / f_path)
                     print(f"已删除文本文件: {f_path}")
                 except FileNotFoundError:
                     pass  # 文件不存在，是正常情况
@@ -69,11 +71,11 @@ if __name__ == "__main__":
             print("--- 删除文本文件完成 ---")
 
             # 步骤 2: 调用 faster-whisper-xxl 处理音频
-            audio_file = '/content/audio.mp3'
+            audio_file = Path(pwd) / 'audio.mp3'
             if os.path.exists(audio_file):
                 print(f"--- 开始使用 faster-whisper-xxl 转录音频 ---")
                 whisper_command = [
-                    '/content/drive/MyDrive/fast_whisper_xxl/r245.4/Faster-Whisper-XXL/faster-whisper-xxl',
+                    whisper,
                     audio_file,
                     '-m', 'large-v2',
                     '-l', 'Chinese',
@@ -95,6 +97,7 @@ if __name__ == "__main__":
                 shutil.copy(Path("audio.srt"), Path("/content/drive/MyDrive/audio2txt") / f"{fn}.srt")
                 shutil.copy(Path("audio.txt"), Path("/content/drive/MyDrive/audio2txt") / f"{fn}.txt")
                 shutil.copy(Path("audio.text"), Path("/content/drive/MyDrive/audio2txt") / f"{fn}.text")
+                print(f"--- 复制文件{fn}完成 ---")
                 
         except Exception as e:
             print(f"处理 '{line}' 期间发生严重错误: {e}")
