@@ -55,7 +55,7 @@ if __name__ == "__main__":
             # 恢复使用 sys.argv 的方式，这对于处理 -c 等参数至关重要
             try:
                 print(f"正在下载: {line}")
-                blbldl_main()
+                blbldl_main(line)
             except SystemExit as e:
                 print(f"下载步骤完成 (退出码: {e.code})。")
 
