@@ -8,7 +8,8 @@ from pathlib import Path
 import shutil
 
 if __name__ == "__main__":
-    input_filename = 'input.txt'
+    audio2txt_dir = '/content/drive/MyDrive/audio2txt'
+    input_filename = Path(audio2txt_dir) / 'input.txt'
     pwd = '/content'
     whisper = '/content/drive/MyDrive/fast_whisper_xxl/r245.4/Faster-Whisper-XXL/faster-whisper-xxl'
     
@@ -94,9 +95,9 @@ if __name__ == "__main__":
             with open("audio.json", "r", encoding='utf-8') as f:
                 j = json.load(f)
                 fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{j.get('title')}][{j.get('bvid')}]"
-                shutil.copy(Path("audio.srt"), Path("/content/drive/MyDrive/audio2txt") / f"{fn}.srt")
-                shutil.copy(Path("audio.txt"), Path("/content/drive/MyDrive/audio2txt") / f"{fn}.txt")
-                shutil.copy(Path("audio.text"), Path("/content/drive/MyDrive/audio2txt") / f"{fn}.text")
+                shutil.copy(Path("audio.srt"), Path(audio2txt_dir) / f"{fn}.srt")
+                shutil.copy(Path("audio.txt"), Path(audio2txt_dir) / f"{fn}.txt")
+                shutil.copy(Path("audio.text"), Path(audio2txt_dir) / f"{fn}.text")
                 print(f"--- 复制文件{fn}完成 ---")
                 
         except Exception as e:
