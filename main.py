@@ -11,7 +11,7 @@ if __name__ == "__main__":
     audio2txt_dir = '/content/drive/MyDrive/audio2txt'
     input_filename = Path(audio2txt_dir) / 'input.txt'
     pwd = '/content'
-    whisper = '/content/drive/MyDrive/fast_whisper_xxl/r245.4/Faster-Whisper-XXL/faster-whisper-xxl'
+    whisper = '/content/drive/MyDrive/Faster-Whisper-XXL/faster-whisper-xxl'
     
     try:
         with open(input_filename, 'r', encoding='utf-8') as f:
