@@ -30,8 +30,9 @@ if __name__ == "__main__":
 
     original_argv = sys.argv
 
-    for line in lines:
-        line = line.strip()
+    # 我们遍历行列表的副本，因为在成功处理后，我们会从原始的 'lines' 列表中移除该行。
+    for line_with_newline in lines[:]:
+        line = line_with_newline.strip()
         if not line or line.startswith('#'):
             continue
 
@@ -99,6 +100,12 @@ if __name__ == "__main__":
                 shutil.copy(Path("audio.txt"), Path(audio2txt_dir) / f"{fn}.txt")
                 shutil.copy(Path("audio.text"), Path(audio2txt_dir) / f"{fn}.text")
                 print(f"--- 复制文件{fn}完成 ---")
+
+            # 处理成功，从列表中删除该行并重写输入文件
+            lines.remove(line_with_newline)
+            with open(input_filename, 'w', encoding='utf-8') as f:
+                f.writelines(lines)
+            print(f"已成功处理并从 {input_filename.name} 中删除行: {line}")
                 
         except Exception as e:
             print(f"处理 '{line}' 期间发生严重错误: {e}")
