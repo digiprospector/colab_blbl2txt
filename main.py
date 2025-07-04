@@ -93,7 +93,7 @@ if __name__ == "__main__":
             else:
                 print(f"警告: 未找到音频文件 '{audio_file}'，跳过转录步骤。")
 
-            with open("audio.json", "r", encoding='utf-8') as f:
+            with open(Path(pwd) / "audio.json", "r", encoding='utf-8') as f:
                 j = json.load(f)
                 fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{j.get('title')}][{j.get('bvid')}]"
                 shutil.copy(Path("audio.srt"), Path(audio2txt_dir) / f"{fn}.srt")
