@@ -13,10 +13,10 @@ if __name__ == "__main__":
     whisper = '/content/drive/MyDrive/Faster-Whisper-XXL/faster-whisper-xxl'
     pwd = '/content'
     f_mp3 = Path(audio2txt_dir) / "audio.mp3"
-    f_json = f_mp3.replace_suffix(".json")
-    f_srt = f_mp3.replace_suffix(".srt")
-    f_text = f_mp3.replace_suffix(".text")
-    f_txt = f_mp3.replace_suffix(".txt")
+    f_json = f_mp3.with_suffix(".json")
+    f_srt = f_mp3.with_suffix(".srt")
+    f_text = f_mp3.with_suffix(".text")
+    f_txt = f_mp3.with_suffix(".txt")
 
     try:
         with open(input_filename, 'r', encoding='utf-8') as f:
