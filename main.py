@@ -12,7 +12,7 @@ if __name__ == "__main__":
     input_filename = Path(audio2txt_dir) / 'input.txt'
     whisper = '/content/drive/MyDrive/Faster-Whisper-XXL/faster-whisper-xxl'
     pwd = '/content'
-    f_mp3 = Path(audio2txt_dir) / "audio.mp3"
+    f_mp3 = Path(pwd) / "audio.mp3"
     f_json = f_mp3.with_suffix(".json")
     f_srt = f_mp3.with_suffix(".srt")
     f_text = f_mp3.with_suffix(".text")
