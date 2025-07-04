@@ -10,9 +10,14 @@ import shutil
 if __name__ == "__main__":
     audio2txt_dir = '/content/drive/MyDrive/audio2txt'
     input_filename = Path(audio2txt_dir) / 'input.txt'
-    pwd = '/content'
     whisper = '/content/drive/MyDrive/Faster-Whisper-XXL/faster-whisper-xxl'
-    
+    pwd = '/content'
+    f_mp3 = Path(audio2txt_dir) / "audio.mp3"
+    f_json = f_mp3.replace_suffix(".json")
+    f_srt = f_mp3.replace_suffix(".srt")
+    f_text = f_mp3.replace_suffix(".text")
+    f_txt = f_mp3.replace_suffix(".txt")
+
     try:
         with open(input_filename, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -41,10 +46,10 @@ if __name__ == "__main__":
 
         try:
             print("--- 开始删除音频文件 ---")
-            files_to_delete = ['audio.mp3', 'audio.json']
+            files_to_delete = [f_mp3, f_json]
             for f_path in files_to_delete:
                 try:
-                    os.remove(Path(pwd) / f_path)
+                    os.remove(f_path)
                     print(f"已删除音频文件: {f_path}")
                 except FileNotFoundError:
                     pass  # 文件不存在，是正常情况
@@ -61,10 +66,10 @@ if __name__ == "__main__":
                 print(f"下载步骤完成 (退出码: {e.code})。")
 
             print("--- 开始删除文本文件 ---")
-            files_to_delete = ['audio.srt', 'audio.text', 'audio.txt']
+            files_to_delete = [f_srt, f_text, f_txt]
             for f_path in files_to_delete:
                 try:
-                    os.remove(Path(pwd) / f_path)
+                    os.remove(f_path)
                     print(f"已删除文本文件: {f_path}")
                 except FileNotFoundError:
                     pass  # 文件不存在，是正常情况
@@ -73,12 +78,11 @@ if __name__ == "__main__":
             print("--- 删除文本文件完成 ---")
 
             # 步骤 2: 调用 faster-whisper-xxl 处理音频
-            audio_file = Path(pwd) / 'audio.mp3'
-            if os.path.exists(audio_file):
+            if os.path.exists(f_mp3):
                 print(f"--- 开始使用 faster-whisper-xxl 转录音频 ---")
                 whisper_command = [
                     whisper,
-                    audio_file,
+                    f_mp3,
                     '-m', 'large-v2',
                     '-l', 'Chinese',
                     '--vad_method', 'pyannote_v3',
@@ -91,14 +95,14 @@ if __name__ == "__main__":
                 subprocess.run(whisper_command, check=True)
                 print("--- 音频转录完成 ---")
             else:
-                print(f"警告: 未找到音频文件 '{audio_file}'，跳过转录步骤。")
+                print(f"警告: 未找到音频文件 '{f_mp3}'，跳过转录步骤。")
 
-            with open(Path(pwd) / "audio.json", "r", encoding='utf-8') as f:
+            with open(f_json, "r", encoding='utf-8') as f:
                 j = json.load(f)
                 fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{j.get('title')}][{j.get('bvid')}]"
-                shutil.copy(Path("audio.srt"), Path(audio2txt_dir) / f"{fn}.srt")
-                shutil.copy(Path("audio.txt"), Path(audio2txt_dir) / f"{fn}.txt")
-                shutil.copy(Path("audio.text"), Path(audio2txt_dir) / f"{fn}.text")
+                shutil.copy(f_srt, Path(audio2txt_dir) / f"{fn}.srt")
+                shutil.copy(f_txt, Path(audio2txt_dir) / f"{fn}.txt")
+                shutil.copy(f_text, Path(audio2txt_dir) / f"{fn}.text")
                 print(f"--- 复制文件{fn}完成 ---")
 
             # 处理成功，从列表中删除该行并重写输入文件
