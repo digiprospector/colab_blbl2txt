@@ -102,7 +102,7 @@ if __name__ == "__main__":
                         '-o', 'source',
                         '-f', 'txt', 'srt', 'text'
                     ]
-                    #subprocess.run(whisper_command, check=True)
+                    subprocess.run(whisper_command, check=True)
                     print("--- 音频转录完成 ---")
                 else:
                     print(f"警告: 未找到音频文件 '{f_mp3}'，跳过转录步骤。")
