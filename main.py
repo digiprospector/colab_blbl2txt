@@ -120,6 +120,9 @@ if __name__ == "__main__":
             with open(input_filename, 'w', encoding='utf-8') as f:
                 f.writelines(lines)
             print(f"已成功处理并从 {input_filename.name} 中删除行: {line}")
+            input_finish_path = input_filename.parent / 'input_finish.txt'
+            with open(input_finish_path, 'a', encoding='utf-8') as f:
+                f.write(line + '\n')
                 
         except Exception as e:
             print(f"处理 '{line}' 期间发生严重错误: {e}")
