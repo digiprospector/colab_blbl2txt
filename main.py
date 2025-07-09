@@ -1,7 +1,7 @@
 import sys
 import os
 import subprocess
-from blbldl.blbldl import main as blbldl_main
+from blbldl.blbldl import fetch_audio_link_from_line, download_audio_and_create_json
 import json
 from datetime import datetime # Import datetime
 from pathlib import Path
@@ -61,68 +61,80 @@ if __name__ == "__main__":
             print("--- 删除音频文件完成 ---")
 
             # 步骤 1: 下载音频
-            # 恢复使用 sys.argv 的方式，这对于处理 -c 等参数至关重要
             print(f"正在下载: {line}")
-            r = blbldl_main(line, Path(pwd), args.max_duration)
-            if r == 'excluded':
+            max_attempts = 10
+            delay = 5
+            status, audio_link, audio_json = fetch_audio_link_from_line(line, max_attempts, delay)
+            if status == 'excluded':
                 print(f"充电专属,已跳过视频: {line}")
-                input_epower_path = input_filename.parent / 'input_epower.txt'
-                with open(input_epower_path, 'a', encoding='utf-8') as f:
-                    f.write(line + '\n')
-            elif r == 'duration':
-                print(f"时长超过,已跳过视频: {line}")
-                input_long_path = input_filename.parent / 'input_long.txt'
-                with open(input_long_path, 'a', encoding='utf-8') as f:
-                    f.write(line + '\n')
+            elif status == 'failed':
+                print(f"下载视频失败: {line}")
             else:
-                print("--- 开始删除文本文件 ---")
-                files_to_delete = [f_srt, f_text, f_txt]
-                for f_path in files_to_delete:
-                    try:
-                        os.remove(f_path)
-                        print(f"已删除文本文件: {f_path}")
-                    except FileNotFoundError:
-                        pass  # 文件不存在，是正常情况
-                    except Exception as e:
-                        print(f"删除文本文件 {f_path} 时出错: {e}")
-                print("--- 删除文本文件完成 ---")
-
-                # 步骤 2: 调用 faster-whisper-xxl 处理音频
-                if os.path.exists(f_mp3):
-                    print(f"--- 开始使用 faster-whisper-xxl 转录音频 ---")
-                    whisper_command = [
-                        whisper,
-                        f_mp3,
-                        '-m', 'large-v2',
-                        '-l', 'Chinese',
-                        '--vad_method', 'pyannote_v3',
-                        '--ff_vocal_extract', 'mdx_kim2',
-                        '--sentence',
-                        '-v', 'true',
-                        '-o', 'source',
-                        '-f', 'txt', 'srt', 'text'
-                    ]
-                    subprocess.run(whisper_command, check=True)
-                    print("--- 音频转录完成 ---")
+                if args.max_duration and audio_json.get('duration') > args.max_duration:
+                    print(f"{line} 视频长度超过 {args.max_duration}秒, 跳过视频")
+                    status = 'toolong'
                 else:
-                    print(f"警告: 未找到音频文件 '{f_mp3}'，跳过转录步骤。")
+                    status = download_audio_and_create_json(audio_link, audio_json, f_mp3)
+                    if status == 'ok':
+                        print("--- 开始删除文本文件 ---")
+                        files_to_delete = [f_srt, f_text, f_txt]
+                        for f_path in files_to_delete:
+                            try:
+                                os.remove(f_path)
+                                print(f"已删除文本文件: {f_path}")
+                            except FileNotFoundError:
+                                pass  # 文件不存在，是正常情况
+                            except Exception as e:
+                                print(f"删除文本文件 {f_path} 时出错: {e}")
+                        print("--- 删除文本文件完成 ---")
 
-                with open(f_json, "r", encoding='utf-8') as f:
-                    j = json.load(f)
-                    fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{j.get('title')}][{j.get('bvid')}]"
-                    shutil.copy(f_srt, Path(audio2txt_dir) / f"{fn}.srt")
-                    shutil.copy(f_txt, Path(audio2txt_dir) / f"{fn}.txt")
-                    shutil.copy(f_text, Path(audio2txt_dir) / f"{fn}.text")
-                    print(f"--- 复制文件{fn}完成 ---")
+                        # 步骤 2: 调用 faster-whisper-xxl 处理音频
+                        if os.path.exists(f_mp3):
+                            print(f"--- 开始使用 faster-whisper-xxl 转录音频 ---")
+                            whisper_command = [
+                                whisper,
+                                f_mp3,
+                                '-m', 'large-v2',
+                                '-l', 'Chinese',
+                                '--vad_method', 'pyannote_v3',
+                                '--ff_vocal_extract', 'mdx_kim2',
+                                '--sentence',
+                                '-v', 'true',
+                                '-o', 'source',
+                                '-f', 'txt', 'srt', 'text'
+                            ]
+                            subprocess.run(whisper_command, check=True)
+                            print("--- 音频转录完成 ---")
+                        else:
+                            print(f"警告: 未找到音频文件 '{f_mp3}'，跳过转录步骤。")
 
-            # 处理成功，从列表中删除该行并重写输入文件
-            lines.remove(line_with_newline)
-            with open(input_filename, 'w', encoding='utf-8') as f:
-                f.writelines(lines)
-            print(f"已成功处理并从 {input_filename.name} 中删除行: {line}")
-            input_finish_path = input_filename.parent / 'input_finish.txt'
-            with open(input_finish_path, 'a', encoding='utf-8') as f:
-                f.write(line + '\n')
+                        with open(f_json, "r", encoding='utf-8') as f:
+                            j = json.load(f)
+                            fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{j.get('title')}][{j.get('bvid')}]"
+                            shutil.copy(f_srt, Path(audio2txt_dir) / f"{fn}.srt")
+                            shutil.copy(f_txt, Path(audio2txt_dir) / f"{fn}.txt")
+                            shutil.copy(f_text, Path(audio2txt_dir) / f"{fn}.text")
+                            print(f"--- 复制文件{fn}完成 ---")
+
+            # status in 'ok', 'failed', 'toolong', 'excluded'
+            if status != 'failed':
+                # 处理成功，从列表中删除该行并重写输入文件
+                lines.remove(line_with_newline)
+                with open(input_filename, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+                print(f"已成功处理并从 {input_filename.name} 中删除行: {line}")
+
+            post_input_path = None
+            if status == 'ok':
+                post_input_path = input_filename.parent / 'input_finish.txt'
+            elif status == 'toolong':
+                post_input_path = input_filename.parent / 'input_long.txt'
+            elif status == 'excluded':
+                post_input_path = input_filename.parent / 'input_epower.txt'
+
+            if post_input_path:
+                with open(post_input_path, 'a', encoding='utf-8') as f:
+                    f.write(line + '\n')
                 
         except Exception as e:
             print(f"处理 '{line}' 期间发生严重错误: {e}")
