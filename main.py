@@ -110,7 +110,11 @@ if __name__ == "__main__":
 
                         with open(f_json, "r", encoding='utf-8') as f:
                             j = json.load(f)
-                            fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{j.get('title')}][{j.get('bvid')}]"
+                            title = j.get('title', 'Untitled')
+                            # 替换在Windows和Linux文件名中不合法的字符
+                            invalid_chars = '<>:"/\\|?*'
+                            sanitized_title = title.translate(str.maketrans(invalid_chars, '_' * len(invalid_chars)))
+                            fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{sanitized_title}][{j.get('bvid')}]"
                             shutil.copy(f_srt, Path(audio2txt_dir) / f"{fn}.srt")
                             shutil.copy(f_txt, Path(audio2txt_dir) / f"{fn}.txt")
                             shutil.copy(f_text, Path(audio2txt_dir) / f"{fn}.text")
