@@ -69,6 +69,8 @@ if __name__ == "__main__":
                 print(f"充电专属,已跳过视频: {line}")
             elif status == 'failed':
                 print(f"下载视频失败: {line}")
+            elif status == 'error':
+                print(f"下载视频错误: {line}")
             else:
                 if args.max_duration and audio_json.get('duration') > args.max_duration:
                     print(f"{line} 视频长度超过 {args.max_duration}秒, 跳过视频")
@@ -120,7 +122,7 @@ if __name__ == "__main__":
                             shutil.copy(f_text, Path(audio2txt_dir) / f"{fn}.text")
                             print(f"--- 复制文件{fn}完成 ---")
 
-            # status in 'ok', 'failed', 'toolong', 'excluded'
+            # status in 'ok', 'failed', 'toolong', 'excluded', 'error'
             if status != 'failed':
                 # 处理成功，从列表中删除该行并重写输入文件
                 lines.remove(line_with_newline)
@@ -135,6 +137,8 @@ if __name__ == "__main__":
                 post_input_path = input_filename.parent / 'input_long.txt'
             elif status == 'excluded':
                 post_input_path = input_filename.parent / 'input_epower.txt'
+            elif status == 'error':
+                post_input_path = input_filename.parent / 'input_error.txt'
 
             if post_input_path:
                 with open(post_input_path, 'a', encoding='utf-8') as f:
