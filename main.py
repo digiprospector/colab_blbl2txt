@@ -23,10 +23,8 @@ if __name__ == "__main__":
     f_text = f_mp3.with_suffix(".text")
     f_txt = f_mp3.with_suffix(".txt")
 
-    try:
-        with open(input_filename, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-    except FileNotFoundError:
+    # 启动时检查文件是否存在。如果不存在，则创建示例文件并退出。
+    if not input_filename.exists():
         print(f"错误：未找到输入文件 '{input_filename}'。")
         print(f"已为您创建一个示例 '{input_filename}' 文件。")
         with open(input_filename, 'w', encoding='utf-8') as f:
@@ -38,11 +36,23 @@ if __name__ == "__main__":
             f.write("# -c SESSDATA=... https://www.bilibili.com/video/BV1GJ411x7h7\n")
         sys.exit(f"请向 '{input_filename}' 添加内容后重新运行。")
 
-    # 我们遍历行列表的副本，因为在成功处理后，我们会从原始的 'lines' 列表中移除该行。
-    for line_with_newline in lines[:]:
+    while True:
+        # 在每次循环开始时，都重新读取文件以获取最新内容
+        with open(input_filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        # 寻找第一个有效行进行处理
+        line_with_newline = None
+        for current_line_obj in lines:
+            if current_line_obj.strip() and not current_line_obj.strip().startswith('#'):
+                line_with_newline = current_line_obj
+                break
+
+        # 如果没有找到有效行，说明所有任务都已处理完毕，退出循环
+        if line_with_newline is None:
+            break
+
         line = line_with_newline.strip()
-        if not line or line.startswith('#'):
-            continue
 
         print("-" * 40)
         print(f"开始处理: {line}")
@@ -124,11 +134,26 @@ if __name__ == "__main__":
 
             # status in 'ok', 'failed', 'toolong', 'excluded', 'error'
             if status != 'failed':
-                # 处理成功，从列表中删除该行并重写输入文件
-                lines.remove(line_with_newline)
-                with open(input_filename, 'w', encoding='utf-8') as f:
-                    f.writelines(lines)
-                print(f"已成功处理并从 {input_filename.name} 中删除行: {line}")
+                # 为了防止覆盖在处理期间用户对文件的修改（例如添加了新行），
+                # 我们在这里重新读取文件，然后只移除我们刚刚处理完的这一行。
+                try:
+                    with open(input_filename, 'r', encoding='utf-8') as f:
+                        current_lines = f.readlines()
+
+                    # 尝试从最新的文件内容中移除我们刚刚处理的行。
+                    # list.remove() 只会移除第一个匹配项，这正是我们想要的。
+                    try:
+                        current_lines.remove(line_with_newline)
+                    except ValueError:
+                        # 如果在处理期间，用户已经手动删除了这一行，.remove() 会抛出 ValueError。
+                        # 这是正常情况，我们忽略它，但仍然继续执行写入，以保留用户可能添加的其他新行。
+                        print(f"提示: 任务 '{line}' 在处理完成前已被从文件中移除。")
+
+                    with open(input_filename, 'w', encoding='utf-8') as f:
+                        f.writelines(current_lines)
+                    print(f"已成功处理并从 {input_filename.name} 中删除行: {line}")
+                except Exception as e:
+                    print(f"错误: 更新 {input_filename.name} 时发生错误: {e}")
 
             post_input_path = None
             if status == 'ok':
@@ -158,4 +183,4 @@ if __name__ == "__main__":
                         print(f"删除文件 {f_path} 时出错: {e}")
 
     print("-" * 40)
-    print("所有行处理完毕。")
+    print("所有待处理行已完成，程序退出。")
