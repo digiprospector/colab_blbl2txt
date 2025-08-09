@@ -3,7 +3,7 @@ import os
 import subprocess
 from blbldl.blbldl import fetch_audio_link_from_line, download_audio_and_create_json
 import json
-from datetime import datetime # Import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import shutil
 import argparse
@@ -126,7 +126,9 @@ if __name__ == "__main__":
                             # 替换在Windows和Linux文件名中不合法的字符
                             invalid_chars = '<>:"/\\|?*'
                             sanitized_title = title.translate(str.maketrans(invalid_chars, '_' * len(invalid_chars)))[0:50]
-                            fn = f"[{datetime.fromtimestamp(j.get('datetime')).strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{sanitized_title}][{j.get('bvid')}]"
+                            # 将B站API返回的UTC时间戳转换为东八区（UTC+8）时间
+                            dt_utc8 = datetime.fromtimestamp(j.get('datetime'), tz=timezone(timedelta(hours=8)))
+                            fn = f"[{dt_utc8.strftime('%Y-%m-%d_%H-%M-%S')}][{j.get('owner')}][{sanitized_title}][{j.get('bvid')}]"
                             shutil.copy(f_srt, Path(audio2txt_dir) / f"{fn}.srt")
                             shutil.copy(f_txt, Path(audio2txt_dir) / f"{fn}.txt")
                             shutil.copy(f_text, Path(audio2txt_dir) / f"{fn}.text")
