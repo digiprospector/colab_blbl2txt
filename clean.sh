@@ -1,4 +1,4 @@
-BASE_DIR="/content/driver/Mydriver"
+BASE_DIR="/content/drive/Mydrive"
 TXT_DIR="$BASE_DIR/audio2txt"
 
 rm -rf "$TXT_DIR/*"
