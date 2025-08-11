@@ -9,6 +9,9 @@ IO_DIR="$SCRIPT_DIR/queue"
 AUDIO_TXT_DIR="/content/drive/MyDrive/audio2txt"
 IO_OUTPUT_DIR="$IO_DIR/output"
 
+echo "清理 $AUDIO_TXT_DIR 目录..."
+rm -f $AUDIO_TXT_DIR/*
+
 # 循环处理所有输入文件，直到 server_out_queue.sh 找不到新文件（返回非0值）为止
 while /content/drive/MyDrive/github/colab_blbl2txt/server_out_queue.sh; do
     echo "---"
