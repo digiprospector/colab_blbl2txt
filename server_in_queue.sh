@@ -7,7 +7,7 @@ set -e
 # 脚本所在的当前工作目录
 SCRIPT_DIR=$(pwd)
 # 'queue' git 仓库的路径
-QUEUE_DIR="$SCRIPT_DIR/queue"
+QUEUE_DIR="/content/drive/MyDrive/github/colab_blbl2txt/queue"
 AUDIO2TXT_DIR="/content/drive/MyDrive/audio2txt"
 # 'queue' 仓库中存放输出文件的目录
 QUEUE_OUTPUT_DIR="$QUEUE_DIR/output"
