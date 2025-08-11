@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# --- 参数处理 ---
+OUT_QUEUE_ARGS=""
+if [ "$1" == "large" ]; then
+    echo "检测到 'large' 参数，将传递给 server_out_queue.sh"
+    OUT_QUEUE_ARGS="large"
+fi
+# --- 参数处理结束 ---
+
 # 脚本所在的当前工作目录
 SCRIPT_DIR=$(pwd)
 # 'io' git 仓库的路径
@@ -13,7 +21,7 @@ echo "清理 $AUDIO_TXT_DIR 目录..."
 rm -f $AUDIO_TXT_DIR/*
 
 # 循环处理所有输入文件，直到 server_out_queue.sh 找不到新文件（返回非0值）为止
-while /content/drive/MyDrive/github/colab_blbl2txt/server_out_queue.sh; do
+while /content/drive/MyDrive/github/colab_blbl2txt/server_out_queue.sh $OUT_QUEUE_ARGS; do
     echo "---"
     echo "成功获取新输入文件，开始处理..."
     # server_out_queue.sh 成功执行，返回码为 0
