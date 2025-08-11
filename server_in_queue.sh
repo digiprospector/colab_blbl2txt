@@ -35,7 +35,7 @@ while true; do
     # 返回到脚本主目录，方便处理路径
     cd "$SCRIPT_DIR"
 
-    cp -rf "$AUDIO2TXT_DIR/output/"* "$QUEUE_OUTPUT_DIR/"
+    cp -rf "$AUDIO2TXT_DIR/"* "$QUEUE_OUTPUT_DIR/"
     echo "已将音频转文本结果复制到队列输出目录: $QUEUE_OUTPUT_DIR"
 
     # 4. 提交并推送文件被移除的这个更改
