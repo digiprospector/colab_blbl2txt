@@ -6,17 +6,25 @@ set -e
 # --- 配置 ---
 # 脚本所在的当前工作目录
 SCRIPT_DIR=$(pwd)
-# 'io' git 仓库的路径
-IO_DIR="$SCRIPT_DIR/io"
-# 'io' 仓库中存放输入文件的目录
-IO_INPUT_DIR="$IO_DIR/input"
+# 'queue' git 仓库的路径
+QUEUE_DIR="$SCRIPT_DIR/queue"
+# 'queue' 仓库中存放输入文件的目录
+QUEUE_INPUT_DIR="$QUEUE_DIR/input"
 # 处理成功后，最终输出文件的路径和名称
 TARGET_INPUT_FILE="/content/drive/MyDrive/audio2txt/input.txt"
 # --- 配置结束 ---
 
-# 检查 'io' 目录是否存在并且是一个 git 仓库
-if [ ! -d "$IO_DIR/.git" ]; then
-    echo "错误: 目录 '$IO_DIR' 不是一个有效的 git 仓库。"
+# --- 根据参数确定文件名模式 ---
+FILENAME_PATTERN="investment_videos_*.txt"
+if [ "$1" == "large" ]; then
+    echo "检测到 'large' 参数，将搜索包含 'large' 的文件。"
+    FILENAME_PATTERN="investment_videos_*large*.txt"
+fi
+# --- 文件名模式确定结束 ---
+
+# 检查 'queue' 目录是否存在并且是一个 git 仓库
+if [ ! -d "$QUEUE_DIR/.git" ]; then
+    echo "错误: 目录 '$QUEUE_DIR' 不是一个有效的 git 仓库。"
     exit 2
 fi
 
@@ -24,24 +32,23 @@ fi
 while true; do
     echo "--- 开始新一轮文件处理尝试 ---"
 
-    # 1. 进入 'io' 目录并拉取最新更改
-    echo "进入目录: $IO_DIR"
-    cd "$IO_DIR"
     
-    echo "正在拉取远程仓库的最新更改..."
+    echo "正在重置并同步仓库..."
+    cd "$QUEUE_DIR"
     git fetch --all
-    git reset --hard @{u}
-    git clean -dfx
+    git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)
+    git pull origin $(git rev-parse --abbrev-ref HEAD)
+    echo "仓库已重置并同步。"
 
     # 2. 寻找一个待处理的文件
     # 返回到脚本主目录，方便处理路径
     cd "$SCRIPT_DIR"
     
     # 使用 find 和 head 命令来安全地获取第一个匹配的文件名
-    FILE_TO_PROCESS=$(find "$IO_INPUT_DIR" -type f -name 'investment_videos_*.txt' | head -n 1)
+    FILE_TO_PROCESS=$(find "$QUEUE_INPUT_DIR" -type f -name "$FILENAME_PATTERN" | head -n 1)
 
     if [ -z "$FILE_TO_PROCESS" ]; then
-        echo "在 '$IO_INPUT_DIR' 目录中未找到需要处理的输入文件。返回1"
+        echo "在 '$QUEUE_INPUT_DIR' 目录中未找到需要处理的输入文件。返回1"
         exit 1
     fi
 
@@ -56,11 +63,11 @@ while true; do
     echo "已将 '$FILENAME' 移动到暂存区: $STAGED_FILE_PATH"
 
     # 4. 提交并推送文件被移除的这个更改
-    echo "进入目录: $IO_DIR"
-    cd "$IO_DIR"
+    echo "进入目录: $QUEUE_DIR"
+    cd "$QUEUE_DIR"
 
     echo "正在暂存(stage)文件删除操作..."
-    git add "$IO_INPUT_DIR/$FILENAME"
+    git add .
     
     echo "正在提交(commit)..."
     git commit -m "处理并移除输入文件: $FILENAME"
@@ -76,8 +83,7 @@ while true; do
         exit 0 # 按照要求，成功后返回 0
     else
         # --- 失败路径 ---
-        echo "推送失败。远程仓库可能已被更新。正在撤销本地更改并重试..."
-        git reset --hard HEAD~1
+        echo "推送失败。远程仓库可能已被更新。重试..."
         cd "$SCRIPT_DIR"
         rm "$STAGED_FILE_PATH"
     fi
