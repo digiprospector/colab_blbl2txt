@@ -42,9 +42,16 @@ while true; do
     echo "进入目录: $QUEUE_DIR"
     cd "$QUEUE_DIR"
 
-    echo "正在暂存(stage)文件删除操作..."
+    echo "正在暂存(stage)文件..."
     git add .
     
+    # 检查是否有任何已暂存的更改。如果没有，则说明没有新文件需要提交。
+    # `git diff --staged --quiet` 如果没有更改，则返回0，否则返回1。
+    if git diff --staged --quiet; then
+        echo "没有需要提交的更改，任务成功完成。"
+        exit 0
+    fi
+
     echo "正在提交(commit)..."
     git commit -m "提交音频转文本结果"
 
