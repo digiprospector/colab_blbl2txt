@@ -35,6 +35,12 @@ while true; do
     # 返回到脚本主目录，方便处理路径
     cd "$SCRIPT_DIR"
 
+    # 检查 AUDIO2TXT_DIR 目录是否为空
+    if [ -z "$(ls -A "$AUDIO2TXT_DIR")" ]; then
+        echo "目录 '$AUDIO2TXT_DIR' 为空，没有文件需要处理。退出脚本。"
+        exit 0
+    fi
+
     cp -rf "$AUDIO2TXT_DIR/"* "$QUEUE_OUTPUT_DIR/"
     echo "已将音频转文本结果复制到队列输出目录: $QUEUE_OUTPUT_DIR"
 
