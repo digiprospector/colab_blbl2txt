@@ -58,14 +58,30 @@ while true; do
     fi
 
     echo "已选择待处理文件: $FILE_TO_PROCESS"
-    FILENAME=$(basename "$FILE_TO_PROCESS")
-    # 将文件移动到当前目录作为临时暂存区
-    STAGED_FILE_PATH="$SCRIPT_DIR/$FILENAME"
+    # 如果FILE_TO_PROCESS是空文件,就删除
+    if [ ! -s "$FILE_TO_PROCESS" ]; then
+        echo "文件 '$FILE_TO_PROCESS' 是空文件，删除..."
+        rm "$FILE_TO_PROCESS"
+    else
+        FILENAME=$(basename "$FILE_TO_PROCESS")
+        # 将文件移动到当前目录作为临时暂存区
+        STAGED_FILE_PATH="$SCRIPT_DIR/$FILENAME"
+        
+        # 获取FILE_TO_PROCESS的第一行
+        FIRST_LINE=$(head -n 1 "$FILE_TO_PROCESS")
+        
+        # 将第一行写入STAGED_FILE_PATH
+        echo "$FIRST_LINE" > "$STAGED_FILE_PATH"
+        
+        # 从FILE_TO_PROCESS删除第一行
+        sed -i '1d' "$FILE_TO_PROCESS"
 
-    # 3. 将文件从 git 仓库移出到暂存区
-    # 这个“移动”操作（即从仓库中删除文件）是我们将要提交的更改
-    mv "$FILE_TO_PROCESS" "$STAGED_FILE_PATH"
-    echo "已将 '$FILENAME' 移动到暂存区: $STAGED_FILE_PATH"
+        # 如果FILE_TO_PROCESS是空文件,就删除
+        if [ ! -s "$FILE_TO_PROCESS" ]; then
+            echo "文件 '$FILE_TO_PROCESS' 变为空文件，删除..."
+            rm "$FILE_TO_PROCESS"
+        fi
+    fi
 
     # 4. 提交并推送文件被移除的这个更改
     echo "进入目录: $QUEUE_DIR"
