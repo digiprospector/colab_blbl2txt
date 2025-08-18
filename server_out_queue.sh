@@ -92,7 +92,7 @@ while true; do
     git add .
     
     echo "正在提交(commit)..."
-    git commit -m "处理并移除输入文件: $FILENAME"
+    git commit -m "处理输入文件: $FILENAME"
 
     echo "正在尝试推送(push)更改到远程仓库..."
     if git push; then
