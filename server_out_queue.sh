@@ -14,19 +14,6 @@ QUEUE_INPUT_DIR="$QUEUE_DIR/input"
 TARGET_INPUT_FILE="/content/drive/MyDrive/audio2txt/input.txt"
 # --- 配置结束 ---
 
-# --- 根据参数确定文件搜索逻辑 ---
-FIND_ARGS=("-type" "f" "-name" "investment_videos_*.txt")
-if [ "$1" == "large" ]; then
-    echo "检测到 'large' 参数，将搜索包含 'large' 的文件。"
-    # 覆盖默认的 name 模式，专门查找 'large' 文件
-    FIND_ARGS=("-type" "f" "-name" "investment_videos_*large*.txt")
-else
-    echo "未检测到 'large' 参数，将搜索不包含 'large' 的文件。"
-    # 在默认模式基础上，增加排除 'large' 的条件
-    FIND_ARGS+=("-not" "-name" "*large*")
-fi
-# --- 文件搜索逻辑结束 ---
-
 # 检查 'queue' 目录是否存在并且是一个 git 仓库
 if [ ! -d "$QUEUE_DIR/.git" ]; then
     echo "错误: 目录 '$QUEUE_DIR' 不是一个有效的 git 仓库。"
@@ -49,8 +36,22 @@ while true; do
     # 返回到脚本主目录，方便处理路径
     cd "$SCRIPT_DIR"
     
-    # 使用 find 和 head 命令来安全地获取第一个匹配的文件名
-    FILE_TO_PROCESS=$(find "$QUEUE_INPUT_DIR" "${FIND_ARGS[@]}" | head -n 1)
+    FILE_TO_PROCESS=""
+    if [ "$1" == "large" ]; then
+        echo "检测到 'large' 参数，优先搜索 'large' 文件。"
+        # 优先查找 'large' 文件。-print -quit 比 `| head -n 1` 更高效。
+        FILE_TO_PROCESS=$(find "$QUEUE_INPUT_DIR" -type f -name "investment_videos_*large*.txt" -print -quit)
+        
+        if [ -z "$FILE_TO_PROCESS" ]; then
+            echo "未找到 'large' 文件，开始搜索常规文件。"
+            # 如果没有 'large' 文件，则查找常规文件
+            FILE_TO_PROCESS=$(find "$QUEUE_INPUT_DIR" -type f -name "investment_videos_*.txt" -not -name "*large*" -print -quit)
+        fi
+    else
+        echo "未检测到 'large' 参数，将搜索不包含 'large' 的文件。"
+        # 只查找常规文件
+        FILE_TO_PROCESS=$(find "$QUEUE_INPUT_DIR" -type f -name "investment_videos_*.txt" -not -name "*large*" -print -quit)
+    fi
 
     if [ -z "$FILE_TO_PROCESS" ]; then
         echo "在 '$QUEUE_INPUT_DIR' 目录中未找到需要处理的输入文件。返回1"
