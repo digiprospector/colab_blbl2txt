@@ -59,12 +59,14 @@ while true; do
     fi
 
     echo "已选择待处理文件: $FILE_TO_PROCESS"
+    FILENAME=$(basename "$FILE_TO_PROCESS")
+    COMMIT_MESSAGE=""
     # 如果FILE_TO_PROCESS是空文件,就删除
     if [ ! -s "$FILE_TO_PROCESS" ]; then
         echo "文件 '$FILE_TO_PROCESS' 是空文件，删除..."
         rm "$FILE_TO_PROCESS"
+        COMMIT_MESSAGE="删除空的输入文件: $FILENAME"
     else
-        FILENAME=$(basename "$FILE_TO_PROCESS")
         # 将文件移动到当前目录作为临时暂存区
         STAGED_FILE_PATH="$SCRIPT_DIR/$FILENAME"
         
@@ -82,6 +84,7 @@ while true; do
             echo "文件 '$FILE_TO_PROCESS' 变为空文件，删除..."
             rm "$FILE_TO_PROCESS"
         fi
+        COMMIT_MESSAGE="处理 $FILENAME 里的 $FIRST_LINE"
     fi
 
     # 4. 提交并推送文件被移除的这个更改
@@ -92,7 +95,7 @@ while true; do
     git add .
     
     echo "正在提交(commit)..."
-    git commit -m "处理输入文件: $FILENAME"
+    git commit -m "$COMMIT_MESSAGE"
 
     echo "正在尝试推送(push)更改到远程仓库..."
     if git push; then
