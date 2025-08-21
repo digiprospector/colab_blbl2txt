@@ -14,6 +14,11 @@ QUEUE_INPUT_DIR="$QUEUE_DIR/input"
 TARGET_INPUT_FILE="/content/drive/MyDrive/audio2txt/input.txt"
 # --- 配置结束 ---
 
+ID=""
+if [ -f "$SCRIPT_DIR/id" ]; then
+    ID=$(cat "$SCRIPT_DIR/id")+","
+fi
+
 # 检查 'queue' 目录是否存在并且是一个 git 仓库
 if [ ! -d "$QUEUE_DIR/.git" ]; then
     echo "错误: 目录 '$QUEUE_DIR' 不是一个有效的 git 仓库。"
@@ -95,7 +100,7 @@ while true; do
     git add .
     
     echo "正在提交(commit)..."
-    git commit -m "$COMMIT_MESSAGE"
+    git commit -m "$ID$COMMIT_MESSAGE"
 
     echo "正在尝试推送(push)更改到远程仓库..."
     if git push; then
