@@ -19,6 +19,11 @@ if [ ! -d "$QUEUE_DIR/.git" ]; then
     exit 2
 fi
 
+ID=""
+if [ -f "$SCRIPT_DIR/id" ]; then
+    ID=$(cat "$SCRIPT_DIR/id")+","
+fi
+
 # 主循环，持续尝试处理文件，直到成功
 while true; do
     echo "--- 开始新一轮文件处理尝试 ---"
@@ -59,7 +64,7 @@ while true; do
     fi
 
     echo "正在提交(commit)..."
-    git commit -m "提交音频转文本结果"
+    git commit -m "${ID}提交音频转文本结果"
 
     echo "正在尝试推送(push)更改到远程仓库..."
     if git push; then
