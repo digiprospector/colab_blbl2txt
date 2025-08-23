@@ -85,7 +85,10 @@ def out_queue():
             if ID_FILE.exists():
                 with ID_FILE.open('r', encoding='utf-8') as f_id:
                     id = f"{f_id.read().strip()}, "
-            commit_msg = f"{id}处理 {input_path.name} 里的 {first_line}"
+            if output_to_input_txt:
+                commit_msg = f"{id}处理 {input_path.name} 里的 {first_line}"
+            else:
+                commit_msg = f"{id}删除孔文件 {input_path.name}"
             
             push_changes(queue_dir, commit_msg)
             break
