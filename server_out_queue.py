@@ -49,7 +49,7 @@ def get_queue_directory(config):
 
 def out_queue():
     queue_dir = get_queue_directory(config)
-    dst_file = config.get("dst_file", "/content/drive/MyDrive/audio2txt/input.txt")
+    dst_file = Path(config.get("dst_file", "/content/drive/MyDrive/audio2txt/input.txt"))
     
     src_dir = queue_dir / "to_stt"
     output_to_input_txt = False
