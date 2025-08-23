@@ -57,7 +57,7 @@ def out_queue():
     while True:
         try:
             reset_repo(queue_dir)
-            input_files = sorted([f for f in src_dir.glob("*") if not f.name.startswith("!")])
+            input_files = sorted([f for f in src_dir.glob("*") if not f.name.startswith(".") and f.is_file()])
             if not input_files:
                 logger.info(f"{src_dir} 目录中没有待处理的文件，退出")
                 break
