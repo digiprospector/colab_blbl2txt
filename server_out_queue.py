@@ -55,7 +55,6 @@ def out_queue():
     output_to_input_txt = False
     
     while True:
-        try:
             reset_repo(queue_dir)
             input_files = sorted([f for f in src_dir.glob("*") if not f.name.startswith(".") and f.is_file()])
             if not input_files:
@@ -92,10 +91,6 @@ def out_queue():
             
             push_changes(queue_dir, commit_msg)
             break
-        except Exception as e:
-            logger.error(f"发生错误: {e}")
-            time.sleep(10)
-            logger.info("10秒后重试...")
 
 if __name__ == "__main__":
     out_queue()
