@@ -55,11 +55,12 @@ def out_queue():
     output_to_input_txt = False
     
     while True:
+        try:
             reset_repo(queue_dir)
             input_files = sorted([f for f in src_dir.glob("*") if not f.name.startswith(".") and f.is_file()])
             if not input_files:
                 logger.info(f"{src_dir} 目录中没有待处理的文件，退出")
-                break
+                return output_to_input_txt
             input_file = input_files[0]
             input_path = input_file.resolve()
             if input_file.stat().st_size == 0:
@@ -78,7 +79,7 @@ def out_queue():
                         f_in.writelines(remaining_lines)
                 else:
                     logger.info(f"文件 {input_path} 没有内容，已跳过")
-                    return
+                    break
             
             id = ""
             if ID_FILE.exists():
@@ -87,10 +88,17 @@ def out_queue():
             if output_to_input_txt:
                 commit_msg = f"{id}处理 {input_path.name} 里的 {first_line}"
             else:
-                commit_msg = f"{id}删除孔文件 {input_path.name}"
+                commit_msg = f"{id}删除空文件 {input_path.name}"
             
             push_changes(queue_dir, commit_msg)
-            break
+            return output_to_input_txt
+        except Exception as e:
+            logger.error(f"发生错误: {e}")
+            time.sleep(10)
+            logger.info("10秒后重试...")
 
 if __name__ == "__main__":
-    out_queue()
+    if out_queue():
+        exit(0)
+    else:
+        exit(1)
