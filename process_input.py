@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 import json
 from dp_bilibili_api import dp_bilibili, download_file_with_resume
+import time
 
 logger = setup_logger(Path(__file__).stem)
 
@@ -104,6 +105,8 @@ def main():
         except Exception as e:
             print(f"处理 {line} 时出错: {e}")
             continue
+        
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()
