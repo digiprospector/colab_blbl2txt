@@ -4,6 +4,7 @@
 import time
 from pathlib import Path
 import shutil
+import json
 
 from dp_logging import setup_logger
 from git_utils import reset_repo, push_changes, set_logger as git_utils_set_logger
@@ -47,12 +48,15 @@ def get_queue_directory(config):
         # 如果是相对路径，则解析为相对于脚本目录的绝对路径
         return (SCRIPT_DIR / queue_path).resolve()
 
-def out_queue():
+def out_queue(duration_limit=1800, limit_type="less_than"):
+    if limit_type not in ["less_than", "better_greater_than"]:
+        logger.error(f"未知的 limit_type: {limit_type}，应为 'less_than' 或 'better_greater_than'")
+        return False
+    
     queue_dir = get_queue_directory(config)
     bv_list_file = Path(config.get("bv_list_file", "/content/drive/MyDrive/audio2txt/input.txt"))
     
     src_dir = queue_dir / "to_stt"
-    output_to_input_txt = False
     
     while True:
         try:
@@ -60,38 +64,100 @@ def out_queue():
             input_files = sorted([f for f in src_dir.glob("*") if not f.name.startswith(".") and f.is_file()])
             if not input_files:
                 logger.info(f"{src_dir} 目录中没有待处理的文件，退出")
-                return output_to_input_txt
-            input_file = input_files[0]
-            input_path = input_file.resolve()
-            if input_file.stat().st_size == 0:
-                logger.info(f"文件 {input_path} 是空文件，已删除")
-                input_file.unlink()
+                break
+            found = False
+            second_found = False
+            if limit_type == "less_than":
+                select_line = ""
+                select_line_index = 0
+                select_file = ""
+                # 逐个检查文件中的每一行，寻找时长小于 duration_limit 的任务
+                for input_file in input_files:
+                    with open(input_file, 'r', encoding='utf-8') as file:
+                        lines = file.readlines()
+                    for line_index, line in enumerate(lines):
+                        line = line.strip()
+                        bv_info = json.loads(line)
+                        if bv_info["duration"] < duration_limit:
+                            select_line = line
+                            select_line_index = line_index
+                            select_file = input_file
+                            found = True
+                            break
+                    if found:
+                        break
+            elif limit_type == "better_greater_than":
+                select_line = ""
+                select_line_index = 0
+                select_file = ""
+                second_select_line = ""
+                second_select_line_index = 0
+                second_select_file = ""
+                # 逐个检查文件中的每一行，寻找时长大于 duration_limit 的任务
+                for input_file in input_files:
+                    with open(input_file, 'r', encoding='utf-8') as file:
+                        lines = file.readlines()
+                    for line_index, line in enumerate(lines):
+                        line = line.strip()
+                        bv_info = json.loads(line)
+                        if bv_info["duration"] > duration_limit:
+                            select_line = line
+                            select_line_index = line_index
+                            select_file = input_file
+                            found = True
+                            break
+                        elif not second_select_line:
+                            second_select_line = line
+                            second_select_line_index = line_index
+                            second_select_file = input_file
+                    if found:
+                        break
+                
+                if not found:
+                    logger.info(f"没有找到时长大于 {duration_limit} 秒的视频, 找其他的视频")
+                    select_line = second_select_line
+                    select_line_index = second_select_line_index
+                    select_file = second_select_file
+                    second_found = True
+                    found = True
             else:
-                output_to_input_txt = True
-                with input_file.open('r', encoding='utf-8') as f:
+                logger.error(f"未知的 limit_type: {limit_type}")
+                break
+                                
+            # 找到了符合条件的行
+            if found:
+                if limit_type == "less_than":
+                    logger.info(f"找到时长小于 {duration_limit} 秒的任务: {select_line}，从 {select_file.name} 中移除该行")
+                elif limit_type == "better_greater_than":
+                    if second_found:
+                        logger.info(f"没有找到时长大于 {duration_limit} 秒的任务, 选择时长小于 {duration_limit} 秒的任务: {select_line}，从 {select_file.name} 中移除该行")
+                    else:
+                        logger.info(f"找到时长大于 {duration_limit} 秒的任务: {select_line}，从 {select_file.name} 中移除该行")
+                with select_file.open('r', encoding='utf-8') as f:
                     lines = f.readlines()
-                if lines:
-                    first_line = lines[0]
-                    remaining_lines = lines[1:]
-                    with bv_list_file.open('w', encoding='utf-8') as f_dst:
-                        f_dst.write(first_line)
-                    with input_file.open('w', encoding='utf-8') as f_in:
-                        f_in.writelines(remaining_lines)
+                remaining_lines = lines[:select_line_index] + lines[select_line_index + 1:]
+                if not remaining_lines:
+                    logger.info(f"文件 {select_file.name} 是空文件，已删除")
+                    select_file.unlink()
                 else:
-                    logger.info(f"文件 {input_path} 没有内容，已跳过")
-                    break
+                    with select_file.open('w', encoding='utf-8') as f_in:
+                        f_in.writelines(remaining_lines)
+                with bv_list_file.open('w', encoding='utf-8') as f_dst:
+                    logger.info(f"写入 {select_line} 到 {bv_list_file.name}")
+                    f_dst.write(select_line + "\n")
+                commit_msg = f"处理 {select_file.name} 里的 {select_line}"
+            else:
+                logger.info(f"没有找到时长小于 {duration_limit} 秒的任务，退出")
+                break
             
             id = ""
             if ID_FILE.exists():
                 with ID_FILE.open('r', encoding='utf-8') as f_id:
                     id = f"{f_id.read().strip()}, "
-            if output_to_input_txt:
-                commit_msg = f"{id}处理 {input_path.name} 里的 {first_line}"
-            else:
-                commit_msg = f"{id}删除空文件 {input_path.name}"
+            commit_msg = f"{id}处理 {select_file.name} 里的 {select_line}"
             
             push_changes(queue_dir, commit_msg)
-            return output_to_input_txt
+            return found
         except Exception as e:
             logger.error(f"发生错误: {e}")
             time.sleep(10)
