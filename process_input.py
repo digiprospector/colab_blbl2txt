@@ -66,7 +66,7 @@ def fetch_audio_link_from_json(bv_info):
     logger.info(f"正在下载 {dl_url} 到 {TEMP_MP3}")
     download_file_with_resume(dp_blbl.session, dl_url, TEMP_MP3)
 
-def main():
+def process_input():
     src_file = Path(config.get("bv_list_file", "/content/drive/MyDrive/audio2txt/input.txt"))
     whisper = '/content/drive/MyDrive/Faster-Whisper-XXL/faster-whisper-xxl'
 
@@ -177,4 +177,4 @@ def main():
         time.sleep(10)
 
 if __name__ == "__main__":
-    main()
+    process_input()

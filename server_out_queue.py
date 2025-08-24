@@ -4,15 +4,16 @@
 import time
 from pathlib import Path
 import shutil
-import git
-from git.exc import GitCommandError
-import argparse
 
 from dp_logging import setup_logger
 from git_utils import reset_repo, push_changes, set_logger as git_utils_set_logger
 
 logger = setup_logger(Path(__file__).stem)
 git_utils_set_logger(logger)
+
+def set_logger(logger_instance):
+    global logger
+    logger = logger_instance
 
 # --- Configuration ---
 # Get the directory where the script is located
