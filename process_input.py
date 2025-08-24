@@ -10,6 +10,9 @@ from datetime import datetime, timezone, timedelta
 
 logger = setup_logger(Path(__file__).stem)
 
+# Get the directory where the script is located
+SCRIPT_DIR = Path(__file__).parent.resolve()
+
 def get_config():
     """Get the queue directory from the config file."""
     config_file = SCRIPT_DIR / "config.json"
@@ -45,8 +48,6 @@ def get_output_directory(config):
         # 如果是相对路径，则解析为相对于脚本目录的绝对路径
         return (SCRIPT_DIR / output_path).resolve()
 
-# Get the directory where the script is located
-SCRIPT_DIR = Path(__file__).parent.resolve()
 TEMP_DIR = get_temp_directory(config)
 OUTPUT_DIR = get_output_directory(config)
 TEMP_MP3 = TEMP_DIR / "audio.mp3"
