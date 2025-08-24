@@ -471,6 +471,7 @@ class dp_bilibili:
                     # 成功获取，返回数据
                     data_json = data.get("data", {})
                     audio_json_list = data_json.get("dash", {}).get("audio", [])
+                    self.logger.info(data_json)
                     # 优先选择id为30280, 30232, 30216的音频
                     target_ids = [30280, 30232, 30216]
                     selected_audio = ""
