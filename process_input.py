@@ -49,7 +49,11 @@ def get_output_directory(config):
         return (SCRIPT_DIR / output_path).resolve()
 
 TEMP_DIR = get_temp_directory(config)
+if not TEMP_DIR.exists():
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR = get_output_directory(config)
+if not OUTPUT_DIR.exists():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_MP3 = TEMP_DIR / "audio.mp3"
 TEMP_SRT = TEMP_MP3.with_suffix(".srt")
 TEMP_TEXT = TEMP_MP3.with_suffix(".text")
