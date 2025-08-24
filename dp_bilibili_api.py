@@ -10,6 +10,7 @@ from functools import reduce
 import urllib.parse
 import hashlib
 from pathlib import Path
+import tqdm
 
 class dp_bilibili:
     def __init__(self, ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3", cookies=None, logger=None, retry_max=10, retry_interval=5):
@@ -522,11 +523,21 @@ def download_file_with_resume(session, url, file_path:Path):
             print(f"服务器返回异常状态码: {response.status_code}")
             return False
         
-        with open(file_path, mode) as file:
+        total_size = int(response.headers.get('content-length', 0))
+        with open(file_path, mode) as file, tqdm(
+                desc="下载音频",
+                total=total_size + file_size,
+                unit='B',
+                unit_scale=True,
+                unit_divisor=1024,
+                initial=file_size,  # 设置初始值
+                position=0,
+                leave=True
+            ) as bar:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     file.write(chunk)
-        
+                    bar.update(len(chunk))
         print("下载完成!")
         return True
         

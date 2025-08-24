@@ -5,17 +5,10 @@ import shutil
 import json
 from dp_bilibili_api import dp_bilibili, download_file_with_resume
 import time
+import subprocess
+from datetime import datetime, timezone, timedelta
 
 logger = setup_logger(Path(__file__).stem)
-
-# Get the directory where the script is located
-SCRIPT_DIR = Path(__file__).parent.resolve()
-BASE_DIR = Path('/content').absolute()
-F_MP3 = BASE_DIR / "audio.mp3"
-F_JSON = F_MP3.with_suffix(".json")
-F_SRT = F_MP3.with_suffix(".srt")
-F_TEXT = F_MP3.with_suffix(".text")
-F_TXT = F_MP3.with_suffix(".txt")
 
 def get_config():
     """Get the queue directory from the config file."""
@@ -32,22 +25,41 @@ def get_config():
     return config
 config = get_config()
 
-def get_queue_directory(config):
-    queue_path = Path(config.get("queue_directory", "queue"))
+def get_temp_directory(config):
+    temp_path = Path(config.get("temp_directory", "temp"))
 
-    if queue_path.is_absolute():
+    if temp_path.is_absolute():
         # 如果是绝对路径，直接使用
-        return queue_path
+        return temp_path
     else:
         # 如果是相对路径，则解析为相对于脚本目录的绝对路径
-        return (SCRIPT_DIR / queue_path).resolve()
+        return (SCRIPT_DIR / temp_path).resolve()
+
+def get_output_directory(config):
+    output_path = Path(config.get("output_directory", "output"))
+
+    if output_path.is_absolute():
+        # 如果是绝对路径，直接使用
+        return output_path
+    else:
+        # 如果是相对路径，则解析为相对于脚本目录的绝对路径
+        return (SCRIPT_DIR / output_path).resolve()
+
+# Get the directory where the script is located
+SCRIPT_DIR = Path(__file__).parent.resolve()
+TEMP_DIR = get_temp_directory(config)
+OUTPUT_DIR = get_output_directory(config)
+TEMP_MP3 = TEMP_DIR / "audio.mp3"
+TEMP_SRT = TEMP_MP3.with_suffix(".srt")
+TEMP_TEXT = TEMP_MP3.with_suffix(".text")
+TEMP_TXT = TEMP_MP3.with_suffix(".txt")
 
 def fetch_audio_link_from_json(bv_info):
     dp_blbl = dp_bilibili(logger=logger)
     dl_url = dp_blbl.get_audio_download_url(bv_info['bvid'], bv_info['cid'])
     logger.info(f"视频 {bv_info['title']} 的下载链接: {dl_url}")
-    logger.info(f"正在下载 {dl_url} 到 {F_MP3}")
-    download_file_with_resume(dp_blbl.session, dl_url, F_MP3)
+    logger.info(f"正在下载 {dl_url} 到 {TEMP_MP3}")
+    download_file_with_resume(dp_blbl.session, dl_url, TEMP_MP3)
 
 def main():
     src_file = Path(config.get("bv_list_file", "/content/drive/MyDrive/audio2txt/input.txt"))
@@ -72,15 +84,21 @@ def main():
 
         # 如果没有找到有效行，说明所有任务都已处理完毕，退出循环
         if line_with_newline is None:
+            print('没有找到有效行，所有任务处理完毕，退出。')
             break
 
+        # 删除已处理的这一行，并保存回文件
+        lines.remove(line_with_newline)
+        with open(src_file, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+    
         line = line_with_newline.strip()
 
         print("-" * 40)
         print(f"开始处理: {line}")
         try:
             print("--- 开始删除音频文件 ---")
-            files_to_delete = [F_MP3, F_JSON]
+            files_to_delete = [TEMP_MP3, F_JSON]
             for f_path in files_to_delete:
                 try:
                     f_path.unlink()
@@ -89,19 +107,62 @@ def main():
                     pass  # 文件不存在，是正常情况
                 except Exception as e:
                     print(f"删除音频文件 {f_path} 时出错: {e}")
-            print("--- 删除音频文件完成 ---")
             # 步骤 1: 下载音频
-            print(f"正在下载: {line}")
+            print(f"开始下载: {line}")
             max_attempts = 10
             delay = 5
             try:
                 bv_info = json.loads(line)
                 print(f'该行是有效的 JSON 字符串。{bv_info.get("bvid")}, {bv_info.get("cid")}')
-                fetch_audio_link_from_json(bv_info)
+                if bv_info['status'] == 'normal':
+                    fetch_audio_link_from_json(bv_info)
+                else:
+                    print(f"状态是{bv_info['status']}, 跳过")
+                    continue
             except json.JSONDecodeError:
                 print("该行不是有效的 JSON 字符串。")
                 status, audio_link, audio_json = fetch_audio_link_from_line(line, max_attempts, delay)
+                
+            # 步骤 2: 调用 faster-whisper-xxl 处理音频
+            if TEMP_MP3.exists():
+                print("--- 开始删除转换后的文本文件 ---")
+                TEMP_SRT.unlink()
+                TEMP_TXT.unlink()
+                TEMP_TEXT.unlink()
+                print(f"--- 开始使用 faster-whisper-xxl 转录音频 ---")
+                whisper_command = [
+                    whisper,
+                    TEMP_MP3,
+                    '-m', 'large-v2',
+                    '-l', 'Chinese',
+                    '--vad_method', 'pyannote_v3',
+                    '--ff_vocal_extract', 'mdx_kim2',
+                    '--sentence',
+                    '-v', 'true',
+                    '-o', 'source',
+                    '-f', 'txt', 'srt', 'text'
+                ]
+                subprocess.run(whisper_command, check=True)
+                print("--- 音频转录完成 ---")
+            else:
+                print(f"警告: 未找到音频文件 '{TEMP_MP3}'，跳过转录步骤。")
+                continue
 
+            print(f"--- 开始复制生成的文本文件 ---")
+            title = bv_info['title']
+            invalid_chars = '<>:"/\\|?*'
+            sanitized_title = title.translate(str.maketrans(invalid_chars, '_' * len(invalid_chars)))[0:50]
+            # 将B站API返回的UTC时间戳转换为东八区（UTC+8）时间
+            dt_utc8 = datetime.fromtimestamp(bv_info['pubdate'], tz=timezone(timedelta(hours=8)))
+            fn = f"[{dt_utc8.strftime('%Y-%m-%d_%H-%M-%S')}][{bv_info['up_name']}][{sanitized_title}][{bv_info['bvid']}]"
+            output_srt = OUTPUT_DIR / f"{fn}.srt"
+            output_txt = output_srt.with_suffix('.txt')
+            output_text = output_srt.with_suffix('.text')
+            shutil.copy(TEMP_SRT, output_srt)
+            shutil.copy(TEMP_TXT, output_txt)
+            shutil.copy(TEMP_TEXT, output_text)            
+            print(f"已复制生成的文本文件到 {OUTPUT_DIR}")
+            
         except Exception as e:
             print(f"处理 {line} 时出错: {e}")
         
