@@ -129,9 +129,14 @@ def main():
             # 步骤 2: 调用 faster-whisper-xxl 处理音频
             if TEMP_MP3.exists():
                 print("--- 开始删除转换后的文本文件 ---")
-                TEMP_SRT.unlink()
-                TEMP_TXT.unlink()
-                TEMP_TEXT.unlink()
+                try:
+                    TEMP_SRT.unlink()
+                    TEMP_TXT.unlink()
+                    TEMP_TEXT.unlink()
+                except FileNotFoundError:
+                    pass  # 文件不存在，是正常情况
+                except Exception as e:
+                    print(f"删除文本文件时出错: {e}")
                 print(f"--- 开始使用 faster-whisper-xxl 转录音频 ---")
                 whisper_command = [
                     whisper,
