@@ -506,6 +506,7 @@ def download_file_with_resume(session, url, file_path:Path):
         bool: 下载成功返回 True，否则返回 False。
     """
     headers = {"referer": 'https://www.bilibili.com'}
+    file_size = 0
     # 检查是否已存在部分下载的文件
     if file_path.exists():
         file_size = file_path.stat().st_size
