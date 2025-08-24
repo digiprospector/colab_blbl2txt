@@ -19,7 +19,6 @@ git_utils_set_logger(logger)
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
 # Define directories relative to the script's location
-LIST_DIR = SCRIPT_DIR / "list"
 ID_FILE= SCRIPT_DIR / "id"
 
 def get_config():
@@ -49,7 +48,7 @@ def get_queue_directory(config):
 
 def out_queue():
     queue_dir = get_queue_directory(config)
-    dst_file = Path(config.get("dst_file", "/content/drive/MyDrive/audio2txt/input.txt"))
+    bv_list_file = Path(config.get("bv_list_file", "/content/drive/MyDrive/audio2txt/input.txt"))
     
     src_dir = queue_dir / "to_stt"
     output_to_input_txt = False
@@ -73,7 +72,7 @@ def out_queue():
                 if lines:
                     first_line = lines[0]
                     remaining_lines = lines[1:]
-                    with dst_file.open('w', encoding='utf-8') as f_dst:
+                    with bv_list_file.open('w', encoding='utf-8') as f_dst:
                         f_dst.write(first_line)
                     with input_file.open('w', encoding='utf-8') as f_in:
                         f_in.writelines(remaining_lines)
