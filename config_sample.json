@@ -1,4 +1,6 @@
 {
     "queue_directory": "queue",
+    "temp_directory": "temp",
+    "output_directory": "output",
     "bv_list_file": "/content/drive/MyDrive/audio2txt/input.txt"
 }
