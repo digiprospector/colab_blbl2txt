@@ -34,7 +34,7 @@ class dp_bilibili:
             self.logger = logging.getLogger(__name__)
             self.logger.setLevel(logging.INFO)
             handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
         self.img_key = None
@@ -83,7 +83,7 @@ class dp_bilibili:
             while True:
                 time.sleep(3)  # 等待一段时间后再轮询
                 params = {'qrcode_key': qrcode_key}
-                poll_response = self.session.get(poll_api, params=params) # 此处将自动使用 session 的 headers
+                poll_response = self.session.get(poll_api, params=self.sign_params(params)) # 此处将自动使用 session 的 headers
                 poll_response.raise_for_status()
                 poll_data = poll_response.json()['data']
                 
@@ -287,9 +287,6 @@ class dp_bilibili:
             "web_location": "1550101"
         }
         
-        # 生成签名
-        signed_params = self.sign_params(params)
-        
         # 请求头
         headers = {
             "Referer": f"https://space.bilibili.com/{mid}/"
@@ -300,7 +297,7 @@ class dp_bilibili:
                 # 发送API请求
                 response = self.session.get(
                     "https://api.bilibili.com/x/space/wbi/arc/search",
-                    params=signed_params,
+                    params=self.sign_params(params),
                     headers=headers,
                     timeout=10
                 )
@@ -357,7 +354,7 @@ class dp_bilibili:
         for attempt in range(self.retry_max):
             try:
                 # session中已包含User-Agent
-                response = self.session.get(api_url, headers=headers, params=params, timeout=10)
+                response = self.session.get(api_url, headers=headers, params=self.sign_params(params), timeout=10)
                 response.raise_for_status()
                 data = response.json()
                 if data.get('code') == 0:
@@ -401,7 +398,7 @@ class dp_bilibili:
         for attempt in range(self.retry_max):
             try:
                 # session中已包含User-Agent
-                response = self.session.get(api_url, params=params, headers=headers, timeout=10)
+                response = self.session.get(api_url, params=self.sign_params(params), headers=headers, timeout=10)
                 response.raise_for_status()
                 data = response.json()
                 if data.get('code') == 0:
@@ -464,14 +461,13 @@ class dp_bilibili:
         for attempt in range(self.retry_max):
             try:
                 # session中已包含User-Agent
-                response = self.session.get(api_url, params=params, timeout=10)
+                response = self.session.get(api_url, params=self.sign_params(params), timeout=10)
                 response.raise_for_status()
                 data = response.json()
                 if data.get('code') == 0:
                     # 成功获取，返回数据
                     data_json = data.get("data", {})
                     audio_json_list = data_json.get("dash", {}).get("audio", [])
-                    self.logger.info(data_json)
                     # 优先选择id为30280, 30232, 30216的音频
                     target_ids = [30280, 30232, 30216]
                     selected_audio = ""
@@ -564,7 +560,7 @@ if __name__ == "__main__":
     dp_blbl.logger.info(f"视频 {title} 的详细信息: {video_info}")
     with open("video_info.json", "w") as f:
         json.dump(video_info, f, ensure_ascii=False, indent=4)
-    dl_url = dp_blbl.get_audio_download_url(bvid, video_info[bvid]['cid'])
+    dl_url = dp_blbl.get_audio_download_url(bvid, video_info['cid'])
     dp_blbl.logger.info(f"视频 {title} 的下载链接: {dl_url}")
     with open("download_url.json", "w") as f:
         json.dump(dl_url, f, ensure_ascii=False, indent=4)
