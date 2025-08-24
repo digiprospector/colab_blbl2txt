@@ -95,7 +95,7 @@ def main():
             delay = 5
             try:
                 bv_info = json.loads(line)
-                print(f"该行是有效的 JSON 字符串。{bv_info.get("bvid")}, {bv_info.get("cid")}")
+                print(f'该行是有效的 JSON 字符串。{bv_info.get("bvid")}, {bv_info.get("cid")}')
                 fetch_audio_link_from_json(bv_info)
             except json.JSONDecodeError:
                 print("该行不是有效的 JSON 字符串。")
