@@ -100,11 +100,10 @@ def main():
                 fetch_audio_link_from_json(bv_info)
             except json.JSONDecodeError:
                 print("该行不是有效的 JSON 字符串。")
-            status, audio_link, audio_json = fetch_audio_link_from_line(line, max_attempts, delay)
+                status, audio_link, audio_json = fetch_audio_link_from_line(line, max_attempts, delay)
 
         except Exception as e:
             print(f"处理 {line} 时出错: {e}")
-            continue
         
         time.sleep(10)
 
