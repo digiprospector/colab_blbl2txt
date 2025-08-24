@@ -19,7 +19,7 @@ def main():
         process_input()
         count += 1
         if count >= 3:
-            logger.info("已处理5轮，退出.")
+            logger.info("已处理3轮，退出.")
             break
     in_queue()
 

@@ -68,12 +68,14 @@ def in_queue():
             if input_files:
                 logger.info(f"复制 {len(input_files)} 个已处理的文件到 {queue_dir / 'from_stt'}")
                 for input_file in input_files:
-                    shutil.move(input_file, queue_dir / "from_stt" / input_file.name)
+                    shutil.copy(input_file, queue_dir / "from_stt" / input_file.name)
                 id = ""
                 if ID_FILE.exists():
                     with ID_FILE.open('r', encoding='utf-8') as f_id:
                         id = f"{f_id.read().strip()}, "
                 push_changes(queue_dir, f"{id}上传 {len(input_files)} 个已处理的文件")
+                for input_file in input_files:
+                    input_file.unlink()
             else:
                 logger.info(f"{OUTPUT_DIR} 目录中没有已处理的文件，退出")
                 break
