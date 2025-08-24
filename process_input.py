@@ -43,7 +43,7 @@ def get_queue_directory(config):
         return (SCRIPT_DIR / queue_path).resolve()
 
 def fetch_audio_link_from_json(bv_info):
-    dp_blbl = dp_bilibili()
+    dp_blbl = dp_bilibili(logger=logger)
     dl_url = dp_blbl.get_audio_download_url(bv_info['bvid'], bv_info['cid'])
     logger.info(f"视频 {bv_info['title']} 的下载链接: {dl_url}")
     logger.info(f"正在下载 {dl_url} 到 {F_MP3}")
